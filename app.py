@@ -9,8 +9,11 @@ st.set_page_config(page_title="BOL Label Generator",
 layout="centered")
 st.title("📦 Shipping Label Generator")
 
-uploaded_files = st.file_uploader("Upload BOL PDFs (single combined 
-or multiple individual)", type="pdf", accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "Upload BOL PDFs (single combined or multiple individual)",
+    type="pdf",
+    accept_multiple_files=True
+
 
 # --- Utility Functions ---
 def extract_fields(text):
