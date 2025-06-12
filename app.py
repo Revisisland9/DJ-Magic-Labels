@@ -26,10 +26,7 @@ def extract_fields(text):
         if "GRAND TOTAL" in line.upper():
             parts = re.findall(r"\d+", line.replace(",", ""))
             if parts:
-                # Take the first number only if it's < 1000 (assume >1000 is weight)
-                likely_qty = [int(n) for n in parts if int(n) < 1000]
-                if likely_qty:
-                    qty = likely_qty[0]
+                qty = int(parts[0])  # Always use the first number as quantity
             break
 
     return {
