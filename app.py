@@ -19,26 +19,37 @@ def extract_fields(text):
     bol_match = re.search(r"BOL Number:\s*(PLS\d+)", text)
     scac_match = re.search(r"SCAC:\s*(\w+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
-    qty_match = re.search(r"(\d+)\s+\d{3,}\s+GRAND TOTAL", text)
+
+    # Improve qty detection by scanning for 'GRAND TOTAL' line and grabbing the number above
+    qty = 1
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if "GRAND TOTAL" in line.upper():
+            for j in range(i - 1, max(i - 4, -1), -1):
+                qty_match = re.search(r"(\d+)\s*lb", lines[j].lower())
+                if qty_match:
+                    qty = int(qty_match.group(1))
+                    break
+            break
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
         "scac": scac_match.group(1) if scac_match else "",
         "so": so_match.group(1) if so_match else "",
-        "qty": int(qty_match.group(1)) if qty_match else 1,
+        "qty": qty,
     }
 
 def make_label_pdf(bol, so, scac, qty):
     pdfs = []
     for i in range(1, qty + 1):
-        pdf = FPDF(orientation='L', unit='in', format=(11, 8.5))
+        pdf = FPDF(orientation='L', unit='in', format=(11, 8.5))  # True landscape
         pdf.add_page()
         pdf.set_font("Arial", 'B', 72)
 
         pdf.set_y(1.0)
-        pdf.cell(11, 2, f"SALES ORDER: {so}", ln=1, align='C')
-        pdf.cell(11, 2, f"SCAC: {scac}", ln=1, align='C')
-        pdf.cell(11, 2, f"PIECE {i} of {qty}", ln=1, align='C')
+        pdf.cell(11, 2, f"{so}", ln=1, align='C')
+        pdf.cell(11, 2, f"{scac}", ln=1, align='C')
+        pdf.cell(11, 2, f"{i} of {qty}", ln=1, align='C')
 
         buffer = BytesIO()
         buffer.write(pdf.output(dest='S').encode('latin1'))
