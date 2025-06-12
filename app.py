@@ -24,10 +24,11 @@ def extract_fields(text):
     lines = text.splitlines()
     for line in lines:
         if "GRAND TOTAL" in line.upper():
-            # Extract the first number on the same line
-            parts = re.findall(r"\d+", line)
+            # Extract all numbers on the line
+            parts = re.findall(r"\d+", line.replace(",", ""))
             if parts:
-                qty = int(parts[0])
+                # Choose the smaller number assuming it's piece count
+                qty = min(int(n) for n in parts)
             break
 
     return {
