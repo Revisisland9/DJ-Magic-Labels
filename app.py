@@ -20,16 +20,14 @@ def extract_fields(text):
     scac_match = re.search(r"SCAC:\s*(\w+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
 
-    # Improve qty detection by scanning for 'GRAND TOTAL' line and grabbing the number above
     qty = 1
     lines = text.splitlines()
-    for i, line in enumerate(lines):
+    for line in lines:
         if "GRAND TOTAL" in line.upper():
-            for j in range(i - 1, max(i - 4, -1), -1):
-                qty_match = re.search(r"(\d+)\s*lb", lines[j].lower())
-                if qty_match:
-                    qty = int(qty_match.group(1))
-                    break
+            # Extract the first number on the same line
+            parts = re.findall(r"\d+", line)
+            if parts:
+                qty = int(parts[0])
             break
 
     return {
@@ -42,14 +40,16 @@ def extract_fields(text):
 def make_label_pdf(bol, so, scac, qty):
     pdfs = []
     for i in range(1, qty + 1):
-        pdf = FPDF(orientation='L', unit='in', format=(11, 8.5))  # True landscape
+        pdf = FPDF(unit='pt', format=(792, 612))  # force 11x8.5 landscape in points
         pdf.add_page()
+        pdf.set_auto_page_break(False)
         pdf.set_font("Arial", 'B', 72)
 
-        pdf.set_y(1.0)
-        pdf.cell(11, 2, f"{so}", ln=1, align='C')
-        pdf.cell(11, 2, f"{scac}", ln=1, align='C')
-        pdf.cell(11, 2, f"{i} of {qty}", ln=1, align='C')
+        # Centered text block
+        pdf.set_y(100)
+        pdf.cell(792, 100, so, ln=1, align='C')
+        pdf.cell(792, 100, scac, ln=1, align='C')
+        pdf.cell(792, 100, f"{i} of {qty}", ln=1, align='C')
 
         buffer = BytesIO()
         buffer.write(pdf.output(dest='S').encode('latin1'))
