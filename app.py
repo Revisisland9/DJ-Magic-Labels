@@ -22,12 +22,17 @@ def extract_fields(text):
 
     qty = 1
     lines = text.splitlines()
-    for line in lines:
-        if "GRAND TOTAL" in line.upper():
-            parts = re.findall(r"\d+", line.replace(",", ""))
-            if parts:
-                qty = int(parts[0])  # Always use the first number as quantity
-            break
+    for i, line in enumerate(lines):
+        if "QTY" in line.upper():
+            # Start scanning numbers in the vertical list under the QTY header
+            count = 0
+            for j in range(i + 1, min(i + 15, len(lines))):  # scan next ~15 lines
+                line_below = lines[j].strip()
+                if re.fullmatch(r"\d+", line_below):
+                    count += int(line_below)
+            if count > 0:
+                qty = count
+                break
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
@@ -91,4 +96,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
