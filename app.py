@@ -34,15 +34,18 @@ def extract_fields(text):
 def make_label_pdf(bol, so, scac, qty):
     pdfs = []
     for i in range(1, qty + 1):
-        pdf = FPDF(unit='pt', format=(792, 612))  # force 11x8.5 landscape in points
+        pdf = FPDF(unit='pt', format=(792, 612))  # 11x8.5 landscape
         pdf.add_page()
         pdf.set_auto_page_break(False)
-        pdf.set_font("Arial", 'B', 72)
+        pdf.set_font("Arial", 'B', 100)  # increase font size
 
-        # Centered text block
-        pdf.set_y(100)
+        # Draw content vertically stretched across the page
+        vertical_positions = [80, 230, 380]
+        pdf.set_y(vertical_positions[0])
         pdf.cell(792, 100, so, ln=1, align='C')
+        pdf.set_y(vertical_positions[1])
         pdf.cell(792, 100, scac, ln=1, align='C')
+        pdf.set_y(vertical_positions[2])
         pdf.cell(792, 100, f"{i} of {qty}", ln=1, align='C')
 
         buffer = BytesIO()
