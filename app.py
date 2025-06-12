@@ -20,20 +20,9 @@ def extract_fields(text):
     scac_match = re.search(r"SCAC:\s*(\w+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
 
-    qty = 1
-    lines = text.splitlines()
-    for i, line in enumerate(lines):
-        if "QTY" in line.upper():
-            count = 0
-            for j in range(i + 1, min(i + 20, len(lines))):
-                line_below = lines[j].strip()
-                clean_line = re.sub(r"[|│]+", " ", line_below)  # Remove border characters
-                qty_match = re.search(r"\b(\d+)\b", clean_line)
-                if qty_match:
-                    count += int(qty_match.group(1))
-            if count > 0:
-                qty = count
-                break
+    # Use 'Shipment Number' field if available; otherwise default to 1
+    shipment_match = re.search(r"Shipment Number:\s*(\d+)", text)
+    qty = int(shipment_match.group(1)) if shipment_match else 1
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
