@@ -24,12 +24,12 @@ def extract_fields(text):
     lines = text.splitlines()
     for i, line in enumerate(lines):
         if "QTY" in line.upper():
-            # Start scanning numbers in the vertical list under the QTY header
             count = 0
-            for j in range(i + 1, min(i + 15, len(lines))):  # scan next ~15 lines
+            for j in range(i + 1, min(i + 20, len(lines))):
                 line_below = lines[j].strip()
-                if re.fullmatch(r"\d+", line_below):
-                    count += int(line_below)
+                qty_match = re.match(r"^\s*(\d+)\b", line_below)
+                if qty_match:
+                    count += int(qty_match.group(1))
             if count > 0:
                 qty = count
                 break
@@ -96,3 +96,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
