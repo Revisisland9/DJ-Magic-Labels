@@ -24,11 +24,12 @@ def extract_fields(text):
     lines = text.splitlines()
     for line in lines:
         if "GRAND TOTAL" in line.upper():
-            # Extract all numbers on the line
             parts = re.findall(r"\d+", line.replace(",", ""))
             if parts:
-                # Choose the smaller number assuming it's piece count
-                qty = min(int(n) for n in parts)
+                # Take the first number only if it's < 1000 (assume >1000 is weight)
+                likely_qty = [int(n) for n in parts if int(n) < 1000]
+                if likely_qty:
+                    qty = likely_qty[0]
             break
 
     return {
@@ -61,6 +62,8 @@ def make_label_pdf(bol, so, scac, qty):
 # --- Main Processing ---
 if uploaded_files:
     all_labels = []
+    total_labels = 0
+    seen_bols = set()
 
     for uploaded_file in uploaded_files:
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
@@ -68,8 +71,11 @@ if uploaded_files:
         for page in doc:
             text = page.get_text()
             fields = extract_fields(text)
-            if fields["bol"]:
+            if fields["bol"] and fields["bol"] not in seen_bols:
+                seen_bols.add(fields["bol"])
+                st.write("Parsed Fields:", fields)
                 label_pdfs = make_label_pdf(fields["bol"], fields["so"], fields["scac"], fields["qty"])
+                total_labels += len(label_pdfs)
                 all_labels.extend(label_pdfs)
 
     if all_labels:
@@ -79,7 +85,7 @@ if uploaded_files:
                 zipf.writestr(filename, data)
         zip_buffer.seek(0)
 
-        st.success(f"Generated {len(all_labels)} labels from {len(uploaded_files)} file(s).")
+        st.success(f"✅ Generated {total_labels} labels from {len(seen_bols)} unique BOL(s).")
         st.download_button(
             label="📥 Download ZIP of Labels",
             data=zip_buffer,
@@ -87,4 +93,5 @@ if uploaded_files:
             mime="application/zip"
         )
     else:
-        st.warning("No valid BOLs found in the uploaded file(s).")
+        st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
