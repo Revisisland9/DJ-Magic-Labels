@@ -27,7 +27,8 @@ def extract_fields(text):
             count = 0
             for j in range(i + 1, min(i + 20, len(lines))):
                 line_below = lines[j].strip()
-                qty_match = re.match(r"^\s*(\d+)\b", line_below)
+                clean_line = re.sub(r"[|│]+", " ", line_below)  # Remove border characters
+                qty_match = re.search(r"\b(\d+)\b", clean_line)
                 if qty_match:
                     count += int(qty_match.group(1))
             if count > 0:
@@ -96,4 +97,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
