@@ -39,11 +39,10 @@ def make_label_pdf(bol, so, scac, qty):
         pdf.cell(11, 2, f"SALES ORDER: {so}", ln=1, align='C')
         pdf.cell(11, 2, f"SCAC: {scac}", ln=1, align='C')
         pdf.cell(11, 2, f"PIECE {i} of {qty}", ln=1, align='C')
-
-        buffer = BytesIO()
-        pdf.output(buffer)
-        buffer.seek(0)
-        pdfs.append((f"{bol}_{i}_of_{qty}.pdf", buffer.read()))
+buffer = BytesIO()
+buffer.write(pdf.output(dest='S').encode('latin1'))
+buffer.seek(0)
+pdfs.append((f"{bol}_{i}_of_{qty}.pdf", buffer.read()))
     return pdfs
 
 # --- Main Processing ---
