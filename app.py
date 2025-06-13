@@ -4,6 +4,7 @@ import re
 from fpdf import FPDF
 import zipfile
 from io import BytesIO
+from fpdf.barcode import code128
 
 st.set_page_config(page_title="BOL Label Generator", layout="centered")
 st.title("📦 Shipping Label Generator")
@@ -43,8 +44,9 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_a.set_y(100)
         pdf_a.cell(792, 100, pro, ln=1, align='C')
         pdf_a.cell(792, 100, scac, ln=1, align='C')
-        pdf_a.set_font("Arial", '', 48)
-        pdf_a.cell(792, 100, f"|{pro}|", ln=1, align='C')  # Simulated barcode
+        pdf_a.set_y(300)
+        barcode = code128(pro, x=260, y=300, w=2.5, h=80)
+        barcode.draw_on(pdf_a)
 
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
@@ -103,3 +105,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
