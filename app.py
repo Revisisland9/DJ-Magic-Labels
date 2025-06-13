@@ -44,7 +44,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_a.cell(792, 100, pro, ln=1, align='C')
         pdf_a.cell(792, 100, scac, ln=1, align='C')
         pdf_a.set_font("Arial", '', 48)
-        pdf_a.cell(792, 100, f"|{pro}|", ln=1, align='C')  # Simulated barcode with bars
+        pdf_a.cell(792, 100, f"|{pro}|", ln=1, align='C')  # Simulated barcode
 
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
@@ -56,10 +56,9 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_b.add_page()
         pdf_b.set_auto_page_break(False)
         pdf_b.set_font("Arial", 'B', 100)
-        vertical_positions = [80, 230, 380]
-        pdf_b.set_y(vertical_positions[0])
+        pdf_b.set_y(100)
         pdf_b.cell(792, 100, so, ln=1, align='C')
-        pdf_b.set_y(vertical_positions[1])
+        pdf_b.set_y(250)
         pdf_b.cell(792, 100, f"{i} of {qty}", ln=1, align='C')
 
         buffer_b = BytesIO()
@@ -104,4 +103,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
