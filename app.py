@@ -30,15 +30,18 @@ def extract_fields(text):
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
-    # Fallback: use first number in line containing "GRAND TOTAL"
     qty = 1
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
         if "GRAND TOTAL" in line.upper():
-            # extract first integer from line
-            match = re.search(r"(\d+)[^\d]*GRAND TOTAL", line.upper())
-            if match:
-                qty = int(match.group(1))
-                break
+            parts = line.strip().split()
+            if len(parts) >= 1 and parts[0].isdigit():
+                qty = int(parts[0])
+            elif i > 0:  # Check previous line for a leading digit
+                prev_parts = lines[i - 1].strip().split()
+                if prev_parts and prev_parts[0].isdigit():
+                    qty = int(prev_parts[0])
+            break
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
@@ -136,3 +139,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
