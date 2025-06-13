@@ -26,8 +26,13 @@ def extract_fields(text):
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
     shipment_match = re.search(r"Shipment Number:\s*(\d+)", text)
+    pieces_match = re.search(r"Pieces:\s*(\d+)[^\d]", text)
 
-    qty = int(shipment_match.group(1)) if shipment_match else 1
+    qty = 1
+    if shipment_match:
+        qty = int(shipment_match.group(1))
+    elif pieces_match:
+        qty = int(pieces_match.group(1))
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
@@ -40,22 +45,25 @@ def extract_fields(text):
 def generate_barcode_image_path(pro_number):
     code128 = barcode.get('code128', pro_number, writer=ImageWriter())
     raw_path = os.path.join(tempfile.gettempdir(), f"{pro_number}")
-    full_path = code128.save(raw_path, options={"write_text": False})  # no duplicate text
+    full_path = code128.save(raw_path, options={"write_text": False})
     return full_path
 
 def make_label_pdfs(bol, so, scac, pro, qty):
     pdfs = []
-    barcode_path = generate_barcode_image_path(pro)
+    use_barcode = bool(pro)
+    label_id = pro if pro else bol
+    barcode_path = generate_barcode_image_path(label_id) if use_barcode else None
 
     for i in range(1, qty + 1):
-        # Label A: Pro Number + Barcode + SCAC (large at bottom)
+        # Label A
         pdf_a = FPDF(unit='pt', format=(792, 612))
         pdf_a.add_page()
         pdf_a.set_auto_page_break(False)
         pdf_a.set_font("Arial", 'B', 72)
         pdf_a.set_y(80)
-        pdf_a.cell(792, 100, pro, ln=1, align='C')
-        pdf_a.image(barcode_path, x=196, y=200, w=400, h=100)
+        pdf_a.cell(792, 100, label_id, ln=1, align='C')
+        if use_barcode:
+            pdf_a.image(barcode_path, x=196, y=200, w=400, h=100)
         pdf_a.set_y(400)
         pdf_a.set_font("Arial", 'B', 100)
         pdf_a.cell(792, 100, scac, ln=1, align='C')
@@ -65,7 +73,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_a.seek(0)
         pdfs.append((f"{bol}_A_{i}_of_{qty}.pdf", buffer_a.read()))
 
-        # Label B: Sales Order + Quantity
+        # Label B
         pdf_b = FPDF(unit='pt', format=(792, 612))
         pdf_b.add_page()
         pdf_b.set_auto_page_break(False)
@@ -80,7 +88,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_b.seek(0)
         pdfs.append((f"{bol}_B_{i}_of_{qty}.pdf", buffer_b.read()))
 
-    if os.path.exists(barcode_path):
+    if barcode_path and os.path.exists(barcode_path):
         os.remove(barcode_path)
 
     return pdfs
@@ -120,4 +128,5 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
 
