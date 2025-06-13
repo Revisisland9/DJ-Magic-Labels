@@ -10,7 +10,7 @@ import tempfile
 import os
 
 st.set_page_config(page_title="R.O.S.S.", layout="centered")
-st.title("R.O.S.S. — Rapid Output Shipping System")
+st.title("R.O.S.S. (Rapid Output Shipping System)")
 
 uploaded_files = st.file_uploader(
     "Upload BOL PDFs (single combined or multiple individual)",
