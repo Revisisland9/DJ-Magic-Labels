@@ -6,7 +6,6 @@ import zipfile
 from io import BytesIO
 import barcode
 from barcode.writer import ImageWriter
-from PIL import Image
 import tempfile
 import os
 
@@ -31,13 +30,13 @@ def extract_fields(text):
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
-    # Improved quantity extraction from "GRAND TOTAL" line with flexible spacing
+    # Most reliable: grab first number from line containing "GRAND TOTAL"
     qty = 1
     for line in text.splitlines():
         if "GRAND TOTAL" in line.upper():
-            tokens = re.split(r"\s{2,}|\t+", line.strip())  # split by 2+ spaces or tabs
-            if len(tokens) >= 1 and tokens[0].isdigit():
-                qty = int(tokens[0])
+            match = re.match(r"^\s*(\d+)", line)
+            if match:
+                qty = int(match.group(1))
                 break
 
     return {
