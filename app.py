@@ -32,16 +32,14 @@ def extract_fields(text):
 
     qty = 1
     lines = text.splitlines()
-    for i, line in enumerate(lines):
-        if "GRAND TOTAL" in line.upper():
+    for line in lines:
+        if "SKD" in line:
             parts = line.strip().split()
-            if len(parts) >= 1 and parts[0].isdigit():
-                qty = int(parts[0])
-            elif i > 0:  # Check previous line for a leading digit
-                prev_parts = lines[i - 1].strip().split()
-                if prev_parts and prev_parts[0].isdigit():
-                    qty = int(prev_parts[0])
-            break
+            for part in parts:
+                if part.isdigit():
+                    qty += int(part)
+    if qty > 1:
+        qty -= 1  # Subtract initial default 1 to avoid double counting
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
@@ -139,4 +137,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
