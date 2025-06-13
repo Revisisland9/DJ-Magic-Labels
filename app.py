@@ -4,7 +4,10 @@ import re
 from fpdf import FPDF
 import zipfile
 from io import BytesIO
-from fpdf.barcode import code128
+import barcode
+from barcode.writer import ImageWriter
+import tempfile
+import os
 
 st.set_page_config(page_title="BOL Label Generator", layout="centered")
 st.title("📦 Shipping Label Generator")
@@ -33,8 +36,17 @@ def extract_fields(text):
         "qty": qty,
     }
 
+def generate_barcode_image(pro_number):
+    temp_dir = tempfile.mkdtemp()
+    filepath = os.path.join(temp_dir, f"{pro_number}.png")
+    code128 = barcode.get('code128', pro_number, writer=ImageWriter())
+    code128.save(filepath)
+    return filepath
+
 def make_label_pdfs(bol, so, scac, pro, qty):
     pdfs = []
+    barcode_path = generate_barcode_image(pro)
+
     for i in range(1, qty + 1):
         # Label A: Pro Number + SCAC + Barcode
         pdf_a = FPDF(unit='pt', format=(792, 612))
@@ -44,9 +56,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_a.set_y(100)
         pdf_a.cell(792, 100, pro, ln=1, align='C')
         pdf_a.cell(792, 100, scac, ln=1, align='C')
-        pdf_a.set_y(300)
-        barcode = code128(pro, x=260, y=300, w=2.5, h=80)
-        barcode.draw_on(pdf_a)
+        pdf_a.image(barcode_path, x=200, y=320, w=400, h=100)
 
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
@@ -68,6 +78,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_b.seek(0)
         pdfs.append((f"{bol}_B_{i}_of_{qty}.pdf", buffer_b.read()))
 
+    os.remove(barcode_path)
     return pdfs
 
 # --- Main Processing ---
@@ -105,4 +116,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
