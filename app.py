@@ -30,11 +30,12 @@ def extract_fields(text):
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
-    # Most reliable: grab first number from line containing "GRAND TOTAL"
+    # Fallback: use first number in line containing "GRAND TOTAL"
     qty = 1
     for line in text.splitlines():
         if "GRAND TOTAL" in line.upper():
-            match = re.match(r"^\s*(\d+)", line)
+            # extract first integer from line
+            match = re.search(r"(\d+)[^\d]*GRAND TOTAL", line.upper())
             if match:
                 qty = int(match.group(1))
                 break
