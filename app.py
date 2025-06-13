@@ -31,9 +31,9 @@ def extract_fields(text):
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
     qty = 1
-    shipment_match = re.search(r"Shipment Number:\s*(\d+)\s*of\s*(\d+)", text, re.IGNORECASE)
+    shipment_match = re.search(r"Shipment Number:\s*(\d+)", text, re.IGNORECASE)
     if shipment_match:
-        qty = int(shipment_match.group(2))
+        qty = int(shipment_match.group(1))
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
