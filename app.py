@@ -37,20 +37,15 @@ def extract_fields(text):
         "qty": qty,
     }
 
-def generate_barcode_image_bytes(pro_number):
+def generate_barcode_image_path(pro_number):
     code128 = barcode.get('code128', pro_number, writer=ImageWriter())
-    raw_path = os.path.join(tempfile.gettempdir(), pro_number)
-    full_path = code128.save(raw_path)  # This returns the full path with .png
-    image = Image.open(full_path)
-    byte_io = BytesIO()
-    image.save(byte_io, format='PNG')
-    byte_io.seek(0)
-    os.remove(full_path)
-    return byte_io
+    raw_path = os.path.join(tempfile.gettempdir(), f"{pro_number}")
+    full_path = code128.save(raw_path)  # returns path to PNG file
+    return full_path
 
 def make_label_pdfs(bol, so, scac, pro, qty):
     pdfs = []
-    barcode_stream = generate_barcode_image_bytes(pro)
+    barcode_path = generate_barcode_image_path(pro)
 
     for i in range(1, qty + 1):
         # Label A: Pro Number + SCAC + Barcode
@@ -61,7 +56,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_a.set_y(100)
         pdf_a.cell(792, 100, pro, ln=1, align='C')
         pdf_a.cell(792, 100, scac, ln=1, align='C')
-        pdf_a.image(barcode_stream, x=200, y=320, w=400, h=100, name="barcode.png")
+        pdf_a.image(barcode_path, x=200, y=320, w=400, h=100)
 
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
@@ -82,6 +77,9 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_b.write(pdf_b.output(dest='S').encode('latin1'))
         buffer_b.seek(0)
         pdfs.append((f"{bol}_B_{i}_of_{qty}.pdf", buffer_b.read()))
+
+    if os.path.exists(barcode_path):
+        os.remove(barcode_path)
 
     return pdfs
 
@@ -120,4 +118,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
