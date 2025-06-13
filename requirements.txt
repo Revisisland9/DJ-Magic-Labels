@@ -2,3 +2,4 @@ streamlit
 PyMuPDF
 fpdf
 python-barcode
+pillow
