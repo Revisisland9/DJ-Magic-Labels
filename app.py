@@ -37,11 +37,9 @@ def extract_fields(text):
     }
 
 def generate_barcode_image(pro_number):
-    temp_dir = tempfile.mkdtemp()
-    filepath = os.path.join(temp_dir, f"{pro_number}.png")
     code128 = barcode.get('code128', pro_number, writer=ImageWriter())
-    code128.save(filepath)
-    return filepath
+    final_path = code128.save(os.path.join(tempfile.gettempdir(), pro_number))
+    return f"{final_path}.png"
 
 def make_label_pdfs(bol, so, scac, pro, qty):
     pdfs = []
@@ -116,3 +114,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
