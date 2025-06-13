@@ -6,6 +6,7 @@ import zipfile
 from io import BytesIO
 import barcode
 from barcode.writer import ImageWriter
+from PIL import Image
 import tempfile
 import os
 
@@ -36,14 +37,20 @@ def extract_fields(text):
         "qty": qty,
     }
 
-def generate_barcode_image(pro_number):
+def generate_barcode_image_bytes(pro_number):
     code128 = barcode.get('code128', pro_number, writer=ImageWriter())
-    final_path = code128.save(os.path.join(tempfile.gettempdir(), pro_number))
-    return f"{final_path}.png"
+    temp_path = os.path.join(tempfile.gettempdir(), f"{pro_number}.png")
+    code128.save(temp_path)
+    image = Image.open(temp_path)
+    byte_io = BytesIO()
+    image.save(byte_io, format='PNG')
+    byte_io.seek(0)
+    os.remove(temp_path)
+    return byte_io
 
 def make_label_pdfs(bol, so, scac, pro, qty):
     pdfs = []
-    barcode_path = generate_barcode_image(pro)
+    barcode_stream = generate_barcode_image_bytes(pro)
 
     for i in range(1, qty + 1):
         # Label A: Pro Number + SCAC + Barcode
@@ -54,7 +61,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_a.set_y(100)
         pdf_a.cell(792, 100, pro, ln=1, align='C')
         pdf_a.cell(792, 100, scac, ln=1, align='C')
-        pdf_a.image(barcode_path, x=200, y=320, w=400, h=100)
+        pdf_a.image(barcode_stream, x=200, y=320, w=400, h=100)
 
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
@@ -76,7 +83,6 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_b.seek(0)
         pdfs.append((f"{bol}_B_{i}_of_{qty}.pdf", buffer_b.read()))
 
-    os.remove(barcode_path)
     return pdfs
 
 # --- Main Processing ---
