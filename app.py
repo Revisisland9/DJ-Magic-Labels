@@ -10,7 +10,7 @@ from PIL import Image
 import tempfile
 import os
 
-st.set_page_config(page_title="(R.O.S.S.) Rapid Output Shipping System", layout="centered")
+st.set_page_config(page_title="R.O.S.S. — Rapid Output Shipping System", layout="centered")
 st.title("📦 (R.O.S.S.) Rapid Output Shipping System")
 
 uploaded_files = st.file_uploader(
