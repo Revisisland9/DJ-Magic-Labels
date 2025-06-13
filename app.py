@@ -10,8 +10,8 @@ from PIL import Image
 import tempfile
 import os
 
-st.set_page_config(page_title="BOL Label Generator", layout="centered")
-st.title("📦 Shipping Label Generator")
+st.set_page_config(page_title="(R.O.S.S.) Rapid Output Shipping System", layout="centered")
+st.title("📦 (R.O.S.S.) Rapid Output Shipping System")
 
 uploaded_files = st.file_uploader(
     "Upload BOL PDFs (single combined or multiple individual)",
@@ -133,3 +133,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
