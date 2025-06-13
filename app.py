@@ -31,15 +31,9 @@ def extract_fields(text):
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
     qty = 1
-    lines = text.splitlines()
-    for line in lines:
-        if "SKD" in line:
-            parts = line.strip().split()
-            for part in parts:
-                if part.isdigit():
-                    qty += int(part)
-    if qty > 1:
-        qty -= 1  # Subtract initial default 1 to avoid double counting
+    shipment_match = re.search(r"Shipment Number:\s*(\d+)\s*of\s*(\d+)", text, re.IGNORECASE)
+    if shipment_match:
+        qty = int(shipment_match.group(2))
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
