@@ -24,6 +24,8 @@ def extract_fields(text):
     bol_match = re.search(r"BOL Number:\s*(PLS\d+)", text)
     if not bol_match:
         bol_match = re.search(r"Primary Reference:\s*(PLS\d+)", text)
+    if not bol_match:
+        bol_match = re.search(r"Load Number:\s*(PLS\d+)", text)
 
     scac_match = re.search(r"SCAC:\s*(\w+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
