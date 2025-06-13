@@ -31,14 +31,13 @@ def extract_fields(text):
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
-    # Try to extract qty from line containing "GRAND TOTAL"
+    # Improved quantity extraction from "GRAND TOTAL" line with flexible spacing
     qty = 1
-    lines = text.splitlines()
-    for line in lines:
+    for line in text.splitlines():
         if "GRAND TOTAL" in line.upper():
-            match = re.match(r"(\d+)\s+[\d,]+\s+GRAND TOTAL", line.upper())
-            if match:
-                qty = int(match.group(1))
+            tokens = re.split(r"\s{2,}|\t+", line.strip())  # split by 2+ spaces or tabs
+            if len(tokens) >= 1 and tokens[0].isdigit():
+                qty = int(tokens[0])
                 break
 
     return {
@@ -63,7 +62,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
 
     for i in range(1, qty + 1):
         # Label A
-        pdf_a = FPDF(unit='pt', format=(792, 612))
+        pdf_a = FPDF(unit='pt', format=(792, 612))  # Landscape
         pdf_a.add_page()
         pdf_a.set_auto_page_break(False)
         pdf_a.set_font("Arial", 'B', 72)
@@ -81,7 +80,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdfs.append((f"{bol}_A_{i}_of_{qty}.pdf", buffer_a.read()))
 
         # Label B
-        pdf_b = FPDF(unit='pt', format=(792, 612))
+        pdf_b = FPDF(unit='pt', format=(792, 612))  # Landscape
         pdf_b.add_page()
         pdf_b.set_auto_page_break(False)
         pdf_b.set_font("Arial", 'B', 100)
@@ -115,7 +114,9 @@ if uploaded_files:
             if fields["bol"] and fields["bol"] not in seen_bols:
                 seen_bols.add(fields["bol"])
                 st.write("Parsed Fields:", fields)
-                label_pdfs = make_label_pdfs(fields["bol"], fields["so"], fields["scac"], fields["pro"], fields["qty"])
+                label_pdfs = make_label_pdfs(
+                    fields["bol"], fields["so"], fields["scac"], fields["pro"], fields["qty"]
+                )
                 total_labels += len(label_pdfs)
                 all_labels.extend(label_pdfs)
 
@@ -135,5 +136,3 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
-
