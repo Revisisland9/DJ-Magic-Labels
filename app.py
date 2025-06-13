@@ -19,39 +19,54 @@ def extract_fields(text):
     bol_match = re.search(r"BOL Number:\s*(PLS\d+)", text)
     scac_match = re.search(r"SCAC:\s*(\w+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
-
-    # Use 'Shipment Number' field if available; otherwise default to 1
+    pro_match = re.search(r"Pro Number:\s*(\d+)", text)
     shipment_match = re.search(r"Shipment Number:\s*(\d+)", text)
+
     qty = int(shipment_match.group(1)) if shipment_match else 1
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
         "scac": scac_match.group(1) if scac_match else "",
         "so": so_match.group(1) if so_match else "",
+        "pro": pro_match.group(1) if pro_match else "",
         "qty": qty,
     }
 
-def make_label_pdf(bol, so, scac, qty):
+def make_label_pdfs(bol, so, scac, pro, qty):
     pdfs = []
     for i in range(1, qty + 1):
-        pdf = FPDF(unit='pt', format=(792, 612))  # 11x8.5 landscape
-        pdf.add_page()
-        pdf.set_auto_page_break(False)
-        pdf.set_font("Arial", 'B', 100)  # increase font size
+        # Label A: Pro Number + SCAC + Barcode
+        pdf_a = FPDF(unit='pt', format=(792, 612))
+        pdf_a.add_page()
+        pdf_a.set_auto_page_break(False)
+        pdf_a.set_font("Arial", 'B', 72)
+        pdf_a.set_y(100)
+        pdf_a.cell(792, 100, pro, ln=1, align='C')
+        pdf_a.cell(792, 100, scac, ln=1, align='C')
+        pdf_a.set_font("Arial", '', 48)
+        pdf_a.cell(792, 100, f"|{pro}|", ln=1, align='C')  # Simulated barcode with bars
 
-        # Draw content vertically stretched across the page
+        buffer_a = BytesIO()
+        buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
+        buffer_a.seek(0)
+        pdfs.append((f"{bol}_A_{i}_of_{qty}.pdf", buffer_a.read()))
+
+        # Label B: Sales Order + Quantity
+        pdf_b = FPDF(unit='pt', format=(792, 612))
+        pdf_b.add_page()
+        pdf_b.set_auto_page_break(False)
+        pdf_b.set_font("Arial", 'B', 100)
         vertical_positions = [80, 230, 380]
-        pdf.set_y(vertical_positions[0])
-        pdf.cell(792, 100, so, ln=1, align='C')
-        pdf.set_y(vertical_positions[1])
-        pdf.cell(792, 100, scac, ln=1, align='C')
-        pdf.set_y(vertical_positions[2])
-        pdf.cell(792, 100, f"{i} of {qty}", ln=1, align='C')
+        pdf_b.set_y(vertical_positions[0])
+        pdf_b.cell(792, 100, so, ln=1, align='C')
+        pdf_b.set_y(vertical_positions[1])
+        pdf_b.cell(792, 100, f"{i} of {qty}", ln=1, align='C')
 
-        buffer = BytesIO()
-        buffer.write(pdf.output(dest='S').encode('latin1'))
-        buffer.seek(0)
-        pdfs.append((f"{bol}_{i}_of_{qty}.pdf", buffer.read()))
+        buffer_b = BytesIO()
+        buffer_b.write(pdf_b.output(dest='S').encode('latin1'))
+        buffer_b.seek(0)
+        pdfs.append((f"{bol}_B_{i}_of_{qty}.pdf", buffer_b.read()))
+
     return pdfs
 
 # --- Main Processing ---
@@ -69,7 +84,7 @@ if uploaded_files:
             if fields["bol"] and fields["bol"] not in seen_bols:
                 seen_bols.add(fields["bol"])
                 st.write("Parsed Fields:", fields)
-                label_pdfs = make_label_pdf(fields["bol"], fields["so"], fields["scac"], fields["qty"])
+                label_pdfs = make_label_pdfs(fields["bol"], fields["so"], fields["scac"], fields["pro"], fields["qty"])
                 total_labels += len(label_pdfs)
                 all_labels.extend(label_pdfs)
 
@@ -89,3 +104,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
