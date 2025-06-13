@@ -40,7 +40,7 @@ def extract_fields(text):
 def generate_barcode_image_path(pro_number):
     code128 = barcode.get('code128', pro_number, writer=ImageWriter())
     raw_path = os.path.join(tempfile.gettempdir(), f"{pro_number}")
-    full_path = code128.save(raw_path)  # returns path to PNG file
+    full_path = code128.save(raw_path, options={"write_text": False})  # no duplicate text
     return full_path
 
 def make_label_pdfs(bol, so, scac, pro, qty):
@@ -48,15 +48,17 @@ def make_label_pdfs(bol, so, scac, pro, qty):
     barcode_path = generate_barcode_image_path(pro)
 
     for i in range(1, qty + 1):
-        # Label A: Pro Number + SCAC + Barcode
+        # Label A: Pro Number + Barcode + SCAC (large at bottom)
         pdf_a = FPDF(unit='pt', format=(792, 612))
         pdf_a.add_page()
         pdf_a.set_auto_page_break(False)
         pdf_a.set_font("Arial", 'B', 72)
-        pdf_a.set_y(100)
+        pdf_a.set_y(80)
         pdf_a.cell(792, 100, pro, ln=1, align='C')
+        pdf_a.image(barcode_path, x=196, y=200, w=400, h=100)
+        pdf_a.set_y(400)
+        pdf_a.set_font("Arial", 'B', 100)
         pdf_a.cell(792, 100, scac, ln=1, align='C')
-        pdf_a.image(barcode_path, x=200, y=320, w=400, h=100)
 
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
@@ -118,3 +120,4 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
