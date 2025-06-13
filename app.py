@@ -10,8 +10,8 @@ from PIL import Image
 import tempfile
 import os
 
-st.set_page_config(page_title="R.O.S.S. — Rapid Output Shipping System", layout="centered")
-st.title("📦 R.O.S.S. (Rapid Output Shipping System)")
+st.set_page_config(page_title="R.O.S.S.", layout="centered")
+st.title("R.O.S.S. — Rapid Output Shipping System")
 
 uploaded_files = st.file_uploader(
     "Upload BOL PDFs (single combined or multiple individual)",
@@ -30,14 +30,16 @@ def extract_fields(text):
     scac_match = re.search(r"SCAC:\s*(\w+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
-    shipment_match = re.search(r"Shipment Number:\s*(\d+)", text)
-    pieces_match = re.search(r"Pieces:\s*(\d+)[^\d]", text)
 
+    # Try to extract qty from line containing "GRAND TOTAL"
     qty = 1
-    if shipment_match:
-        qty = int(shipment_match.group(1))
-    elif pieces_match:
-        qty = int(pieces_match.group(1))
+    lines = text.splitlines()
+    for line in lines:
+        if "GRAND TOTAL" in line.upper():
+            match = re.match(r"(\d+)\s+[\d,]+\s+GRAND TOTAL", line.upper())
+            if match:
+                qty = int(match.group(1))
+                break
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
@@ -133,4 +135,5 @@ if uploaded_files:
         )
     else:
         st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
 
