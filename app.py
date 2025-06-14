@@ -12,7 +12,7 @@ import os
 st.set_page_config(page_title="R.O.S.S.", layout="centered")
 st.title("R.O.S.S. — Rapid Output Shipping System")
 
-mode = st.radio("Choose Input Mode:", ["Upload PDF", "Manual Entry"])
+manual_mode = st.toggle("📝 Manual Entry Mode", value=False)
 
 # --- Utility Functions ---
 def extract_fields(text):
@@ -90,7 +90,7 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
     return pdfs
 
 # --- PDF Mode ---
-if mode == "Upload PDF":
+if not manual_mode:
     uploaded_files = st.file_uploader(
         "Upload BOL PDFs (single combined or multiple individual)",
         type="pdf",
@@ -135,23 +135,28 @@ if mode == "Upload PDF":
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
 
 # --- Manual Entry Mode ---
-elif mode == "Manual Entry":
+else:
     st.markdown("### Manual Shipment Entry")
+    if st.button("🗑️ Clear Form"):
+        for i in range(20):
+            for key in [f"so_{i}", f"pro_{i}", f"scac_{i}", f"qty_{i}"]:
+                st.session_state.pop(key, None)
+        st.experimental_rerun()
+
     entries = []
-    cols = st.columns([3, 3, 2, 2])
-    cols[0].markdown("**Sales Order**")
-    cols[1].markdown("**Pro Number**")
-    cols[2].markdown("**SCAC**")
-    cols[3].markdown("**Quantity**")
+    show_next_row = True
 
     for i in range(20):
-        row = [
-            cols[0].text_input("", key=f"so_{i}"),
-            cols[1].text_input("", key=f"pro_{i}"),
-            cols[2].text_input("", key=f"scac_{i}"),
-            cols[3].number_input("", key=f"qty_{i}", min_value=1, value=1, step=1)
-        ]
-        entries.append(row)
+        if not show_next_row:
+            break
+        cols = st.columns([3, 3, 2, 2])
+        so = cols[0].text_input("", key=f"so_{i}")
+        pro = cols[1].text_input("", key=f"pro_{i}")
+        scac = cols[2].text_input("", key=f"scac_{i}")
+        qty = cols[3].number_input("", key=f"qty_{i}", min_value=1, value=1, step=1)
+        entries.append((so, pro, scac, qty))
+        if not so.strip():
+            show_next_row = False
 
     if st.button("🚀 Generate Labels"):
         all_labels = []
@@ -179,4 +184,3 @@ elif mode == "Manual Entry":
             )
         else:
             st.warning("⚠️ No valid manual entries found.")
-
