@@ -12,7 +12,7 @@ import os
 st.set_page_config(page_title="R.O.S.S.", layout="centered")
 st.title("R.O.S.S. — Rapid Output Shipping System")
 
-manual_mode = st.toggle("📝 Manual Entry Mode", value=False)
+manual_mode = st.toggle("Manual Entry", value=False)
 
 # --- Utility Functions ---
 def extract_fields(text):
@@ -142,6 +142,12 @@ else:
             for key in [f"so_{i}", f"pro_{i}", f"scac_{i}", f"qty_{i}"]:
                 st.session_state.pop(key, None)
         st.experimental_rerun()
+
+    header_cols = st.columns([3, 3, 2, 2])
+    header_cols[0].markdown("**Sales Order**")
+    header_cols[1].markdown("**Pro Number**")
+    header_cols[2].markdown("**SCAC**")
+    header_cols[3].markdown("**Quantity**")
 
     entries = []
     show_next_row = True
