@@ -10,13 +10,9 @@ import tempfile
 import os
 
 st.set_page_config(page_title="R.O.S.S.", layout="centered")
-st.title("R.O.S.S. (Rapid Output Shipping System)")
+st.title("R.O.S.S. — Rapid Output Shipping System")
 
-uploaded_files = st.file_uploader(
-    "Upload BOL PDFs (single combined or multiple individual)",
-    type="pdf",
-    accept_multiple_files=True
-)
+mode = st.radio("Choose Input Mode:", ["Upload PDF", "Manual Entry"])
 
 # --- Utility Functions ---
 def extract_fields(text):
@@ -49,11 +45,10 @@ def generate_barcode_image_path(pro_number):
     full_path = code128.save(raw_path, options={"write_text": False})
     return full_path
 
-def make_label_pdfs(bol, so, scac, pro, qty):
+def make_label_pdfs(label_id, so, scac, pro, qty):
     pdfs = []
     use_barcode = bool(pro)
-    label_id = pro if pro else bol
-    barcode_path = generate_barcode_image_path(label_id) if use_barcode else None
+    barcode_path = generate_barcode_image_path(pro) if use_barcode else None
 
     for i in range(1, qty + 1):
         # Label A
@@ -62,7 +57,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         pdf_a.set_auto_page_break(False)
         pdf_a.set_font("Arial", 'B', 72)
         pdf_a.set_y(80)
-        pdf_a.cell(792, 100, label_id, ln=1, align='C')
+        pdf_a.cell(792, 100, pro if pro else label_id, ln=1, align='C')
         if use_barcode:
             pdf_a.image(barcode_path, x=196, y=200, w=400, h=100)
         pdf_a.set_y(400)
@@ -72,7 +67,7 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_a = BytesIO()
         buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
         buffer_a.seek(0)
-        pdfs.append((f"{bol}_A_{i}_of_{qty}.pdf", buffer_a.read()))
+        pdfs.append((f"{so}_A_{i}_of_{qty}.pdf", buffer_a.read()))
 
         # Label B
         pdf_b = FPDF(unit='pt', format=(792, 612))  # Landscape
@@ -87,47 +82,101 @@ def make_label_pdfs(bol, so, scac, pro, qty):
         buffer_b = BytesIO()
         buffer_b.write(pdf_b.output(dest='S').encode('latin1'))
         buffer_b.seek(0)
-        pdfs.append((f"{bol}_B_{i}_of_{qty}.pdf", buffer_b.read()))
+        pdfs.append((f"{so}_B_{i}_of_{qty}.pdf", buffer_b.read()))
 
     if barcode_path and os.path.exists(barcode_path):
         os.remove(barcode_path)
 
     return pdfs
 
-# --- Main Processing ---
-if uploaded_files:
-    all_labels = []
-    total_labels = 0
-    seen_bols = set()
+# --- PDF Mode ---
+if mode == "Upload PDF":
+    uploaded_files = st.file_uploader(
+        "Upload BOL PDFs (single combined or multiple individual)",
+        type="pdf",
+        accept_multiple_files=True
+    )
 
-    for uploaded_file in uploaded_files:
-        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    if uploaded_files:
+        all_labels = []
+        total_labels = 0
+        seen_bols = set()
 
-        for page in doc:
-            text = page.get_text()
-            fields = extract_fields(text)
-            if fields["bol"] and fields["bol"] not in seen_bols:
-                seen_bols.add(fields["bol"])
-                st.write("Parsed Fields:", fields)
-                label_pdfs = make_label_pdfs(
-                    fields["bol"], fields["so"], fields["scac"], fields["pro"], fields["qty"]
-                )
+        for uploaded_file in uploaded_files:
+            doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+
+            for page in doc:
+                text = page.get_text()
+                fields = extract_fields(text)
+                if fields["so"] and fields["so"] not in seen_bols:
+                    seen_bols.add(fields["so"])
+                    st.write("Parsed Fields:", fields)
+                    label_pdfs = make_label_pdfs(
+                        fields["so"], fields["so"], fields["scac"], fields["pro"], fields["qty"]
+                    )
+                    total_labels += len(label_pdfs)
+                    all_labels.extend(label_pdfs)
+
+        if all_labels:
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zipf:
+                for filename, data in all_labels:
+                    zipf.writestr(filename, data)
+            zip_buffer.seek(0)
+
+            st.success(f"✅ Generated {total_labels} labels from {len(seen_bols)} unique shipment(s).")
+            st.download_button(
+                label="📥 Download ZIP of Labels",
+                data=zip_buffer,
+                file_name="shipping_labels.zip",
+                mime="application/zip"
+            )
+        else:
+            st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
+# --- Manual Entry Mode ---
+elif mode == "Manual Entry":
+    st.markdown("### Manual Shipment Entry")
+    entries = []
+    cols = st.columns([3, 3, 2, 2])
+    cols[0].markdown("**Sales Order**")
+    cols[1].markdown("**Pro Number**")
+    cols[2].markdown("**SCAC**")
+    cols[3].markdown("**Quantity**")
+
+    for i in range(20):
+        row = [
+            cols[0].text_input("", key=f"so_{i}"),
+            cols[1].text_input("", key=f"pro_{i}"),
+            cols[2].text_input("", key=f"scac_{i}"),
+            cols[3].number_input("", key=f"qty_{i}", min_value=1, value=1, step=1)
+        ]
+        entries.append(row)
+
+    if st.button("🚀 Generate Labels"):
+        all_labels = []
+        total_labels = 0
+
+        for idx, (so, pro, scac, qty) in enumerate(entries):
+            if so.strip():
+                label_pdfs = make_label_pdfs(f"MANUAL-{idx+1:03}", so.strip(), scac.strip(), pro.strip(), qty)
                 total_labels += len(label_pdfs)
                 all_labels.extend(label_pdfs)
 
-    if all_labels:
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w") as zipf:
-            for filename, data in all_labels:
-                zipf.writestr(filename, data)
-        zip_buffer.seek(0)
+        if all_labels:
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zipf:
+                for filename, data in all_labels:
+                    zipf.writestr(filename, data)
+            zip_buffer.seek(0)
 
-        st.success(f"✅ Generated {total_labels} labels from {len(seen_bols)} unique BOL(s).")
-        st.download_button(
-            label="📥 Download ZIP of Labels",
-            data=zip_buffer,
-            file_name="shipping_labels.zip",
-            mime="application/zip"
-        )
-    else:
-        st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+            st.success(f"✅ Generated {total_labels} labels from manual entries.")
+            st.download_button(
+                label="📥 Download ZIP of Labels",
+                data=zip_buffer,
+                file_name="manual_labels.zip",
+                mime="application/zip"
+            )
+        else:
+            st.warning("⚠️ No valid manual entries found.")
+
