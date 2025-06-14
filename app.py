@@ -141,11 +141,10 @@ if not manual_mode:
 else:
     st.markdown("### Manual Shipment Entry")
     if st.button("🗑️ Clear Form"):
-        for i in range(20):
-            for key in [f"so_{i}", f"pro_{i}", f"scac_{i}", f"qty_{i}"]:
-                if key in st.session_state:
-                    del st.session_state[key]
-        st.success("Form cleared! You may refresh the page to verify.")
+        keys_to_clear = [k for k in st.session_state.keys() if k.startswith("so_") or k.startswith("pro_") or k.startswith("scac_") or k.startswith("qty_")]
+        for key in keys_to_clear:
+            del st.session_state[key]
+        st.success("Form cleared! All manual entries removed.")
 
     header_cols = st.columns([3, 3, 2, 2])
     header_cols[0].markdown("**Sales Order**")
