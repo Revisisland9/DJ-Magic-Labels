@@ -8,6 +8,7 @@ import barcode
 from barcode.writer import ImageWriter
 import tempfile
 import os
+from datetime import datetime
 
 st.set_page_config(page_title="R.O.S.S.", layout="centered")
 st.title("R.O.S.S. — Rapid Output Shipping System")
@@ -118,6 +119,8 @@ if not manual_mode:
                     all_labels.extend(label_pdfs)
 
         if all_labels:
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            zip_filename = f"shipping_labels_{timestamp}.zip"
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
                 for filename, data in all_labels:
@@ -128,7 +131,7 @@ if not manual_mode:
             st.download_button(
                 label="📥 Download ZIP of Labels",
                 data=zip_buffer,
-                file_name="shipping_labels.zip",
+                file_name=zip_filename,
                 mime="application/zip"
             )
         else:
@@ -176,6 +179,8 @@ else:
                 all_labels.extend(label_pdfs)
 
         if all_labels:
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            zip_filename = f"manual_labels_{timestamp}.zip"
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
                 for filename, data in all_labels:
@@ -186,7 +191,7 @@ else:
             st.download_button(
                 label="📥 Download ZIP of Labels",
                 data=zip_buffer,
-                file_name="manual_labels.zip",
+                file_name=zip_filename,
                 mime="application/zip"
             )
         else:
