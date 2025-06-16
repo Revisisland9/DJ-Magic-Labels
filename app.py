@@ -29,9 +29,10 @@ def extract_fields(text):
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
     qty = 1
-    shipment_match = re.search(r"Shipment Number:\s*(\d+)", text, re.IGNORECASE)
-    if shipment_match:
-        qty = int(shipment_match.group(1))
+    # Updated quantity logic for Normal BOL using "Pieces:"
+    pieces_match = re.search(r"(?i)Pieces\s*[:\-]?\s*(\d+)", text)
+    if pieces_match:
+        qty = int(pieces_match.group(1))
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
@@ -41,11 +42,13 @@ def extract_fields(text):
         "qty": qty,
     }
 
+
 def generate_barcode_image_path(pro_number):
     code128 = barcode.get('code128', pro_number, writer=ImageWriter())
     raw_path = os.path.join(tempfile.gettempdir(), f"{pro_number}")
     full_path = code128.save(raw_path, options={"write_text": False})
     return full_path
+
 
 def make_label_pdfs(label_id, so, scac, pro, qty):
     pdfs = []
@@ -196,3 +199,4 @@ else:
             )
         else:
             st.warning("⚠️ No valid manual entries found.")
+
