@@ -15,7 +15,6 @@ st.set_page_config(page_title="R.O.S.S.", layout="centered")
 st.title("R.O.S.S. — Rapid Output Shipping System")
 
 manual_mode = st.toggle("Manual Entry", value=False)
-sign_and_combine = False
 
 # --- Utility Functions ---
 def extract_fields(text):
@@ -92,32 +91,6 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
 
     return pdfs
 
-def sign_bol_and_combine(files):
-    signed_doc = fitz.open()
-    today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
-
-    def sign_bol_and_combine(files):
-    signed_doc = fitz.open()
-    today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
-
-    for uploaded_file in files:
-        uploaded_file.seek(0)
-        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-        for page in doc:
-            # Position the name and date into the signature box
-            page.insert_text((150, 805), f"Ross Rubeke    {today_str}", fontsize=10)
-            signed_doc.insert_pdf(doc, from_page=page.number, to_page=page.number)
-
-    buffer = BytesIO()
-    signed_doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-    buffer = BytesIO()
-    signed_doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
 # --- PDF Mode ---
 if not manual_mode:
     uploaded_files = st.file_uploader(
@@ -125,8 +98,6 @@ if not manual_mode:
         type="pdf",
         accept_multiple_files=True
     )
-
-    sign_and_combine = st.checkbox("🖊️ Sign and combine BOLs with Ross Rubeke")
 
     if uploaded_files:
         all_labels = []
@@ -164,15 +135,6 @@ if not manual_mode:
                 file_name=zip_filename,
                 mime="application/zip"
             )
-
-            if sign_and_combine:
-                signed_pdf = sign_bol_and_combine(uploaded_files)
-                st.download_button(
-                    label="📝 Download Signed BOL PDF",
-                    data=signed_pdf,
-                    file_name=f"signed_bols_{timestamp}.pdf",
-                    mime="application/pdf"
-                )
         else:
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
 
