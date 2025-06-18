@@ -54,7 +54,7 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
 
     for i in range(1, qty + 1):
         # Label A
-        pdf_a = FPDF(unit='pt', format=(792, 612))  # Landscape
+        pdf_a = FPDF(unit='pt', format=(792, 612))
         pdf_a.add_page()
         pdf_a.set_auto_page_break(False)
         pdf_a.set_font("Arial", 'B', 72)
@@ -72,7 +72,7 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
         pdfs.append((f"{so}_A_{i}_of_{qty}.pdf", buffer_a.read()))
 
         # Label B
-        pdf_b = FPDF(unit='pt', format=(792, 612))  # Landscape
+        pdf_b = FPDF(unit='pt', format=(792, 612))
         pdf_b.add_page()
         pdf_b.set_auto_page_break(False)
         pdf_b.set_font("Arial", 'B', 100)
@@ -105,7 +105,8 @@ if not manual_mode:
         seen_bols = set()
 
         for uploaded_file in uploaded_files:
-            doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+            file_buffer = BytesIO(uploaded_file.read())
+            doc = fitz.open(stream=file_buffer, filetype="pdf")
 
             for page in doc:
                 text = page.get_text()
@@ -130,7 +131,7 @@ if not manual_mode:
 
             st.success(f"✅ Generated {total_labels} labels from {len(seen_bols)} unique shipment(s).")
             st.download_button(
-                label="📥 Download ZIP of Labels",
+                label="📅 Download ZIP of Labels",
                 data=zip_buffer,
                 file_name=zip_filename,
                 mime="application/zip"
@@ -189,7 +190,7 @@ else:
 
             st.success(f"✅ Generated {total_labels} labels from manual entries.")
             st.download_button(
-                label="📥 Download ZIP of Labels",
+                label="📅 Download ZIP of Labels",
                 data=zip_buffer,
                 file_name=zip_filename,
                 mime="application/zip"
