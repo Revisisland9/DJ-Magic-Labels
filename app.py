@@ -16,8 +16,6 @@ st.title("R.O.S.S. — Rapid Output Shipping System")
 
 manual_mode = st.toggle("Manual Entry", value=False)
 sign_and_combine = False
-if not manual_mode:
-    sign_and_combine = st.checkbox("🖊️ Sign and combine BOLs with Ross Rubeke")
 
 # --- Utility Functions ---
 def extract_fields(text):
@@ -56,7 +54,8 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
     barcode_path = generate_barcode_image_path(pro) if use_barcode else None
 
     for i in range(1, qty + 1):
-        pdf_a = FPDF(unit='pt', format=(792, 612))
+        # Label A
+        pdf_a = FPDF(unit='pt', format=(792, 612))  # Landscape
         pdf_a.add_page()
         pdf_a.set_auto_page_break(False)
         pdf_a.set_font("Arial", 'B', 72)
@@ -73,7 +72,8 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
         buffer_a.seek(0)
         pdfs.append((f"{so}_A_{i}_of_{qty}.pdf", buffer_a.read()))
 
-        pdf_b = FPDF(unit='pt', format=(792, 612))
+        # Label B
+        pdf_b = FPDF(unit='pt', format=(792, 612))  # Landscape
         pdf_b.add_page()
         pdf_b.set_auto_page_break(False)
         pdf_b.set_font("Arial", 'B', 100)
@@ -92,34 +92,32 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
 
     return pdfs
 
-def sign_bol_and_combine(uploaded_files):
-    combined_pdf = fitz.open()
-    today = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
+def sign_bol_and_combine(files):
+    signed_doc = fitz.open()
+    today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
 
-    for uploaded_file in uploaded_files:
+    for uploaded_file in files:
+        uploaded_file.seek(0)
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         for page in doc:
-            rect = page.rect
-            text = "Shipper: Ross Rubeke        Date: " + today
-            page.insert_text(
-                fitz.Point(rect.x0 + 50, rect.y1 - 75),
-                text,
-                fontsize=12,
-                fontname="helv",
-                color=(0, 0, 0)
-            )
-            combined_pdf.insert_pdf(doc, from_page=page.number, to_page=page.number)
-    output_buffer = BytesIO()
-    combined_pdf.save(output_buffer)
-    output_buffer.seek(0)
-    return output_buffer
+            page.insert_text((50, 700), f"Shipper: Ross Rubeke", fontsize=10)
+            page.insert_text((400, 700), f"Date: {today_str}", fontsize=10)
+            signed_doc.insert_pdf(doc, from_page=page.number, to_page=page.number)
 
+    buffer = BytesIO()
+    signed_doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+# --- PDF Mode ---
 if not manual_mode:
     uploaded_files = st.file_uploader(
         "Upload BOL PDFs (single combined or multiple individual)",
         type="pdf",
         accept_multiple_files=True
     )
+
+    sign_and_combine = st.checkbox("🖊️ Sign and combine BOLs with Ross Rubeke")
 
     if uploaded_files:
         all_labels = []
@@ -128,6 +126,7 @@ if not manual_mode:
 
         for uploaded_file in uploaded_files:
             doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+
             for page in doc:
                 text = page.get_text()
                 fields = extract_fields(text)
@@ -151,24 +150,21 @@ if not manual_mode:
 
             st.success(f"✅ Generated {total_labels} labels from {len(seen_bols)} unique shipment(s).")
             st.download_button(
-                label="📅 Download ZIP of Labels",
+                label="📥 Download ZIP of Labels",
                 data=zip_buffer,
                 file_name=zip_filename,
                 mime="application/zip"
             )
 
-        if sign_and_combine:
-            st.info("Creating signed and combined BOL file...")
-            signed_pdf = sign_bol_and_combine(uploaded_files)
-            signed_filename = f"signed_combined_BOLs_{timestamp}.pdf"
-            st.download_button(
-                label="🖊️ Download Signed BOL PDF",
-                data=signed_pdf,
-                file_name=signed_filename,
-                mime="application/pdf"
-            )
-
-        if not all_labels and not sign_and_combine:
+            if sign_and_combine:
+                signed_pdf = sign_bol_and_combine(uploaded_files)
+                st.download_button(
+                    label="📝 Download Signed BOL PDF",
+                    data=signed_pdf,
+                    file_name=f"signed_bols_{timestamp}.pdf",
+                    mime="application/pdf"
+                )
+        else:
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
 
 # --- Manual Entry Mode ---
@@ -222,12 +218,10 @@ else:
 
             st.success(f"✅ Generated {total_labels} labels from manual entries.")
             st.download_button(
-                label="📅 Download ZIP of Labels",
+                label="📥 Download ZIP of Labels",
                 data=zip_buffer,
                 file_name=zip_filename,
                 mime="application/zip"
             )
         else:
             st.warning("⚠️ No valid manual entries found.")
-
-
