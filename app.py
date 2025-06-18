@@ -53,38 +53,34 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
     barcode_path = generate_barcode_image_path(pro) if use_barcode else None
 
     for i in range(1, qty + 1):
-        # Label A
-        pdf_a = FPDF(unit='pt', format=(792, 612))
-        pdf_a.add_page()
-        pdf_a.set_auto_page_break(False)
-        pdf_a.set_font("Arial", 'B', 72)
-        pdf_a.set_y(80)
-        pdf_a.cell(792, 100, pro if pro else label_id, ln=1, align='C')
+        pdf = FPDF(unit='pt', format=(792, 612))  # Landscape
+        pdf.add_page()
+        pdf.set_auto_page_break(False)
+
+        # Sales Order at the top
+        pdf.set_font("Arial", 'B', 80)
+        pdf.set_y(60)
+        pdf.cell(792, 80, so, ln=1, align='C')
+
+        # Label A portion
+        pdf.set_font("Arial", 'B', 72)
+        pdf.set_y(160)
+        pdf.cell(792, 80, pro if pro else label_id, ln=1, align='C')
         if use_barcode:
-            pdf_a.image(barcode_path, x=196, y=200, w=400, h=100)
-        pdf_a.set_y(400)
-        pdf_a.set_font("Arial", 'B', 100)
-        pdf_a.cell(792, 100, scac, ln=1, align='C')
+            pdf.image(barcode_path, x=196, y=240, w=400, h=100)
+        pdf.set_y(360)
+        pdf.set_font("Arial", 'B', 100)
+        pdf.cell(792, 100, scac, ln=1, align='C')
 
-        buffer_a = BytesIO()
-        buffer_a.write(pdf_a.output(dest='S').encode('latin1'))
-        buffer_a.seek(0)
-        pdfs.append((f"{so}_A_{i}_of_{qty}.pdf", buffer_a.read()))
+        # Quantity marker
+        pdf.set_y(500)
+        pdf.set_font("Arial", 'B', 80)
+        pdf.cell(792, 80, f"{i} of {qty}", ln=1, align='C')
 
-        # Label B
-        pdf_b = FPDF(unit='pt', format=(792, 612))
-        pdf_b.add_page()
-        pdf_b.set_auto_page_break(False)
-        pdf_b.set_font("Arial", 'B', 100)
-        pdf_b.set_y(100)
-        pdf_b.cell(792, 100, so, ln=1, align='C')
-        pdf_b.set_y(250)
-        pdf_b.cell(792, 100, f"{i} of {qty}", ln=1, align='C')
-
-        buffer_b = BytesIO()
-        buffer_b.write(pdf_b.output(dest='S').encode('latin1'))
-        buffer_b.seek(0)
-        pdfs.append((f"{so}_B_{i}_of_{qty}.pdf", buffer_b.read()))
+        buffer = BytesIO()
+        buffer.write(pdf.output(dest='S').encode('latin1'))
+        buffer.seek(0)
+        pdfs.append((f"{so}_{i}_of_{qty}.pdf", buffer.read()))
 
     if barcode_path and os.path.exists(barcode_path):
         os.remove(barcode_path)
