@@ -96,13 +96,22 @@ def sign_bol_and_combine(files):
     signed_doc = fitz.open()
     today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
 
+    def sign_bol_and_combine(files):
+    signed_doc = fitz.open()
+    today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
+
     for uploaded_file in files:
         uploaded_file.seek(0)
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         for page in doc:
-            page.insert_text((50, 700), f"Shipper: Ross Rubeke", fontsize=10)
-            page.insert_text((400, 700), f"Date: {today_str}", fontsize=10)
+            # Position the name and date into the signature box
+            page.insert_text((150, 805), f"Ross Rubeke    {today_str}", fontsize=10)
             signed_doc.insert_pdf(doc, from_page=page.number, to_page=page.number)
+
+    buffer = BytesIO()
+    signed_doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 
     buffer = BytesIO()
     signed_doc.save(buffer)
