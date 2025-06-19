@@ -109,7 +109,7 @@ if not manual_mode:
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 text_to_insert = f"{shipper_name or '__________________'}    {today_str}"
-                page.insert_text((88, 680), text_to_insert, fontsize=11, fontname="cursive", fill=(0, 0, 0))
+                page.insert_text((88, 680), text_to_insert, fontsize=11, fontname="helv", fill=(0, 0, 0))
             combined_bol.insert_pdf(doc)
 
             for page in doc:
