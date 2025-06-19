@@ -25,7 +25,7 @@ def extract_fields(text):
     if not bol_match:
         bol_match = re.search(r"Load Number:\s*(PLS\d+)", text)
 
-    scac_match = re.search(r"SCAC:\s*(\w+)", text)
+    carrier_match = re.search(r"Carrier:\s*(.+)", text)
     so_match = re.search(r"Sales Order:\s*(SO-\d+[\w-]*)", text)
     pro_match = re.search(r"Pro Number:\s*(\d+)", text)
 
@@ -36,7 +36,7 @@ def extract_fields(text):
 
     return {
         "bol": bol_match.group(1) if bol_match else "",
-        "scac": scac_match.group(1) if scac_match else "",
+        "scac": carrier_match.group(1).strip().split()[0] if carrier_match else "",
         "so": so_match.group(1) if so_match else "",
         "pro": pro_match.group(1) if pro_match else "",
         "qty": qty,
@@ -106,10 +106,12 @@ if not manual_mode:
         for uploaded_file in uploaded_files:
             file_buffer = BytesIO(uploaded_file.read())
             doc = fitz.open(stream=file_buffer, filetype="pdf")
+
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 text_to_insert = f"{shipper_name or '__________________'}    {today_str}"
                 page.insert_text((88, 680), text_to_insert, fontsize=11, fontname="helv", fill=(0, 0, 0))
+
             combined_bol.insert_pdf(doc)
 
             for page in doc:
@@ -143,13 +145,13 @@ if not manual_mode:
 
             st.success(f"✅ Generated {total_labels} labels from {len(seen_bols)} unique shipment(s).")
             st.download_button(
-                label="📅 Download Combined Labels PDF",
+                label="📥 Download Combined Labels PDF",
                 data=label_buffer,
                 file_name=f"labels_{timestamp}.pdf",
                 mime="application/pdf"
             )
             st.download_button(
-                label="📅 Download Combined BOLs PDF",
+                label="📥 Download Combined BOLs PDF",
                 data=bol_buffer,
                 file_name=f"bols_{timestamp}.pdf",
                 mime="application/pdf"
