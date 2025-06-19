@@ -109,8 +109,8 @@ if not manual_mode:
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 if shipper_name:
-                    text_to_insert = f"Shipper: {shipper_name}    Date: {today_str}"
-                    page.insert_text((110, 715), text_to_insert, fontsize=11, fontname="helv", fill=(0, 0, 0))
+                    text_to_insert = f"{shipper_name}    {today_str}"
+                    page.insert_text((240, 732), text_to_insert, fontsize=11, fontname="helv", fill=(0, 0, 0))
             combined_bol.insert_pdf(doc)
 
             for page in doc:
@@ -157,3 +157,4 @@ if not manual_mode:
             )
         else:
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
