@@ -90,7 +90,7 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
     return pdfs
 
 # --- Manual Entry Mode ---
-else:
+if manual_mode:
     st.markdown("### Manual Shipment Entry")
     if st.button("🗑️ Clear Form"):
         keys_to_clear = [k for k in st.session_state.keys() if k.startswith("so_") or k.startswith("pro_") or k.startswith("scac_") or k.startswith("qty_")]
@@ -220,3 +220,4 @@ if not manual_mode:
             )
         else:
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
