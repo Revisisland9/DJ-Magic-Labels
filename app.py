@@ -15,6 +15,7 @@ st.set_page_config(page_title="R.O.S.S.", layout="centered")
 st.title("R.O.S.S. — Rapid Output Shipping System")
 
 manual_mode = st.toggle("Manual Entry", value=False)
+shipper_name = st.text_input("Enter Shipper Name (for signature box on BOL)", value="")
 
 # --- Utility Functions ---
 def extract_fields(text):
@@ -100,10 +101,16 @@ if not manual_mode:
         total_labels = 0
         seen_bols = set()
         combined_bol = fitz.open()
+            today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
 
         for uploaded_file in uploaded_files:
             file_buffer = BytesIO(uploaded_file.read())
             doc = fitz.open(stream=file_buffer, filetype="pdf")
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                if shipper_name:
+                    text_to_insert = f"Shipper: {shipper_name}    Date: {today_str}"
+                    page.insert_text((110, 575), text_to_insert, fontsize=10, fontname="helv", fill=(0, 0, 0))
             combined_bol.insert_pdf(doc)
 
             for page in doc:
