@@ -64,9 +64,9 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
         pdf.cell(792, 80, so, ln=1, align='C')
 
         # Label A portion
-        pdf.set_font("Arial", 'B', 72)
-        pdf.set_y(160)
-        pdf.cell(792, 80, pro if pro else label_id, ln=1, align='C')
+        pdf.set_font("Arial", 'B', 24)
+        pdf.set_y(350)
+        pdf.cell(792, 30, pro if pro else label_id, ln=1, align='C')
         if use_barcode:
             pdf.image(barcode_path, x=196, y=240, w=400, h=100)
         pdf.set_y(360)
@@ -158,5 +158,4 @@ if not manual_mode:
             )
         else:
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
-
 
