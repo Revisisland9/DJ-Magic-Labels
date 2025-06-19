@@ -89,6 +89,67 @@ def make_label_pdfs(label_id, so, scac, pro, qty):
 
     return pdfs
 
+# --- Manual Entry Mode ---
+else:
+    st.markdown("### Manual Shipment Entry")
+    if st.button("🗑️ Clear Form"):
+        keys_to_clear = [k for k in st.session_state.keys() if k.startswith("so_") or k.startswith("pro_") or k.startswith("scac_") or k.startswith("qty_")]
+        for key in keys_to_clear:
+            del st.session_state[key]
+        st.success("Form cleared! All manual entries removed.")
+
+    header_cols = st.columns([3, 3, 2, 2])
+    header_cols[0].markdown("**Sales Order**")
+    header_cols[1].markdown("**Pro Number**")
+    header_cols[2].markdown("**Carrier**")
+    header_cols[3].markdown("**Quantity**")
+
+    entries = []
+    show_next_row = True
+
+    for i in range(20):
+        if not show_next_row:
+            break
+        cols = st.columns([3, 3, 2, 2])
+        so = cols[0].text_input("", key=f"so_{i}")
+        pro = cols[1].text_input("", key=f"pro_{i}")
+        scac = cols[2].text_input("", key=f"scac_{i}")
+        qty = cols[3].number_input("", key=f"qty_{i}", min_value=1, value=1, step=1)
+        entries.append((so, pro, scac, qty))
+        if not so.strip():
+            show_next_row = False
+
+    if st.button("🚀 Generate Labels"):
+        all_labels = []
+        total_labels = 0
+
+        for idx, (so, pro, scac, qty) in enumerate(entries):
+            if so.strip():
+                label_pdfs = make_label_pdfs(f"MANUAL-{idx+1:03}", so.strip(), scac.strip(), pro.strip(), qty)
+                total_labels += len(label_pdfs)
+                all_labels.extend(label_pdfs)
+
+        if all_labels:
+            timestamp = datetime.now(ZoneInfo("America/Chicago")).strftime("%Y%m%d-%H%M%S")
+            merged_label_pdf = fitz.open()
+            for label_data in all_labels:
+                temp_pdf = fitz.open(stream=label_data, filetype="pdf")
+                merged_label_pdf.insert_pdf(temp_pdf)
+
+            label_buffer = BytesIO()
+            merged_label_pdf.save(label_buffer)
+            label_buffer.seek(0)
+
+            st.success(f"✅ Generated {total_labels} labels from manual entries.")
+            st.download_button(
+                label="📥 Download Manual Labels PDF",
+                data=label_buffer,
+                file_name=f"manual_labels_{timestamp}.pdf",
+                mime="application/pdf"
+            )
+        else:
+            st.warning("⚠️ No valid manual entries found.")
+
 # --- PDF Mode ---
 if not manual_mode:
     uploaded_files = st.file_uploader(
