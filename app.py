@@ -101,7 +101,7 @@ if not manual_mode:
         total_labels = 0
         seen_bols = set()
         combined_bol = fitz.open()
-            today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
+        today_str = datetime.now(ZoneInfo("America/Chicago")).strftime("%m/%d/%Y")
 
         for uploaded_file in uploaded_files:
             file_buffer = BytesIO(uploaded_file.read())
@@ -157,3 +157,4 @@ if not manual_mode:
             )
         else:
             st.warning("⚠️ No valid BOLs found in the uploaded file(s).")
+
